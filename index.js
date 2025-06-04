@@ -13,6 +13,8 @@ function logAction(user, action) {
     });
 }
 
+
+// == Variable Client ==
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -22,6 +24,17 @@ const client = new Client({
     ],
     partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
+
+
+// === Ready ===
+client.once(Events.ClientReady, async () => {
+    console.log(`Connecté en tant que ${client.user.tag}`);
+    
+    client.guilds.cache.forEach(guild=> {
+        console.log(`→ Connecté au serveur : ${guild.name} (ID : ${guild.id})`);
+    });
+});
+
 
 // === Initialiser joueur ===
 function initJoueur(user) {
@@ -68,10 +81,6 @@ function createQuantiteMenu(vendeur, itemIndex, max) {
     return menu;
 }
 
-// === Ready ===
-client.once(Events.ClientReady, () => {
-    console.log(`Connecté en tant que ${client.user.tag}`);
-});
 
 // === Réactions classiques ===
 const TARGET_EMOJI = '👍';
