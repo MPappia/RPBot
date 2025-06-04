@@ -1,3 +1,25 @@
+const fs = require('fs');
+const path = require('path');
+
+const joueursPath = path.join(__dirname, 'joueurs.json');
+
+
+let joueurs = {};
+if (fs.existsSync(joueursPath)) {
+    try {
+        joueurs = JSON.parse(fs.readFileSync(joueursPath, 'utf-8'));
+        console.log('[✅] Profils des joueurs chargés.');
+    } catch (err) {
+        console.error('❌ Erreur lors du chargement des joueurs :', err);
+    }
+}
+
+function saveJoueurs() {
+    fs.writeFile(joueursPath, JSON.stringify(joueurs, null, 2), (err) => {
+        if (err) console.error('❌ Erreur lors de la sauvegarde des joueurs :', err);
+    });
+}
+
 const vendeurs = {
     "marchand": [
         { nom: "Torche", description: "Éclaire les souterrains.", prix: 1, stock: 10 },
@@ -37,10 +59,4 @@ const vendeurs = {
     ]
 };
 
-
-const joueurs = {};
-
-
-
-
-module.exports = {joueurs, vendeurs};
+module.exports = { joueurs, vendeurs, saveJoueurs };

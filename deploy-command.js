@@ -21,7 +21,47 @@ const commands = [
         .addStringOption(option =>
             option.setName('dés')
                 .setDescription('Exemple : 1d20, 3d6, 2d10+5')
-                .setRequired(false))
+                .setRequired(false)),
+    new SlashCommandBuilder()
+        .setName('admin')
+        .setDescription("Commandes d'admin pour la gestion des données")
+        .addSubcommand(sub =>
+            sub.setName('setgold')
+                .setDescription("Définir, ajouter ou retirer de l'or à un joueur")
+                .addUserOption(opt => 
+                    opt.setName('joueur')
+                    .setDescription('Choisir un joueur')
+                    .setRequired(true)
+                )
+                .addStringOption(opt => 
+                    opt.setName('action')
+                    .setDescription('Action : set / add / remove')
+                    .addChoices(
+                        { name: 'Définir', value: 'set' },
+                        { name: 'Ajouter', value: 'add' },
+                        { name: 'Déduire', value: 'remove' }
+                    )
+                    .setRequired(true)
+                )
+                .addIntegerOption(opt => 
+                    opt.setName('montant')
+                    .setDescription('Montant concerné')
+                    .setRequired(true)
+                )
+        )
+            .addSubcommand(sub =>
+                sub.setName('additem')
+                    .setDescription("Ajouter un objet à un joueur")
+                    .addUserOption(opt => opt.setName('joueur').setDescription('Choisir un joueur').setRequired(true))
+                    .addStringOption(opt => opt.setName('vendeur').setDescription('marchand, forgeron, apothicaire').setRequired(true))
+                    .addStringOption(opt => opt.setName('objet').setDescription('Nom exact de l\'objet').setRequired(true))
+                    .addIntegerOption(opt => opt.setName('quantité').setDescription('Quantité').setRequired(true))
+            )
+            .addSubcommand(sub =>
+                sub.setName('reset')
+                    .setDescription("Réinitialiser un joueur")
+                    .addUserOption(opt => opt.setName('joueur').setDescription('Choisir un joueur').setRequired(true))
+            )
 ]
     .map(command => command.toJSON());
 

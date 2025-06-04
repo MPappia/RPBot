@@ -1,6 +1,17 @@
 const { Client, GatewayIntentBits, Partials, Events, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
-const { vendeurs, joueurs } = require('./objet.js');
+const { vendeurs, joueurs, saveJoueurs } = require('./objet.js');
+
+const fs = require('fs');
+const path = require('path');
+const { log } = require('console');
+
+function logAction(user, action) {
+    const logLine = `[${new Date().toLocaleString()}] ${user.tag} (${user.id}): ${action}\n`;
+    fs.appendFile(path.join(__dirname, 'logs.txt'), logLine, (err) => {
+        if (err) console.error('Erreur lors de l\'écriture des logs :', err);
+    });
+}
 
 const client = new Client({
     intents: [
@@ -66,7 +77,7 @@ client.once(Events.ClientReady, () => {
 const TARGET_EMOJI = '👍';
 const DM_MESSAGE = "Salut ! Merci d'avoir réagi avec 👍. Voici ton message privé de bot ! 🎉";
 const TARGET_EMOJI_PUNPUN = '💩';
-const DM_MESSAGE_PUNPUN = "Tu viens de te faire Punpuned.";
+const DM_MESSAGE_PUNPUN = "Caca";
 
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
     if (user.bot) return;
@@ -76,11 +87,13 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     if (reaction.emoji.name === TARGET_EMOJI) {
         const dmChannel = await user.createDM();
         await dmChannel.send(DM_MESSAGE);
+        logAction(user, 'a cliqué sur 👍');
     }
 
     if (reaction.emoji.name === TARGET_EMOJI_PUNPUN) {
         const dmChannel = await user.createDM();
         await dmChannel.send(DM_MESSAGE_PUNPUN);
+        logAction(user, 'a cliqué sur 💩');
     }
 });
 
@@ -96,13 +109,13 @@ client.on(Events.InteractionCreate, async interaction => {
         let dés = interaction.options.getString('dés') || '1d20';
         const match = dés.match(/^(\d+)d(\d+)([+-]\d+)?$/);
         if (!match) {
-            await interaction.reply({ content: 'Format invalide ! Utilise : `1d20`, `3d6`, `2d10+5`.', ephemeral: true });
+            await interaction.reply({ content: 'Format invalide ! Utilise : `1d20`, `3d6`, `2d10+5`.'});
             return;
         }
 
         const nombre = parseInt(match[1]), faces = parseInt(match[2]), modificateur = match[3] ? parseInt(match[3]) : 0;
         if (nombre > 10 || faces > 1000) {
-            await interaction.reply({ content: 'Limite : 10 dés, 1000 faces max.', ephemeral: true });
+            await interaction.reply({ content: 'Limite : 10 dés, 1000 faces max.'});
             return;
         }
 
@@ -120,31 +133,23 @@ client.on(Events.InteractionCreate, async interaction => {
         let message = `🎲 Résultats de **${dés}** : ${resultats.join(', ')}. Total : ${total}`;
         if (critique) message += `\n🌟 Succès critique !`;
         if (echec) message += `\n💥 Échec critique...`;
-        await interaction.reply({ content: message, ephemeral: true });
+        await interaction.reply({ content: message });
+        logAction(interaction.user, `a lancé les dés ${dés} -> Résultat : ${total}`);
         return;
     }
 
     // === /or ===
     if (interaction.isChatInputCommand() && interaction.commandName === 'or') {
         const or = joueurs[userId].or;
-        const reply = await interaction.reply({ content: `💰 ${interaction.user}, tu as actuellement **${or} PO**.`, ephemeral: true });
-        setTimeout(async () => {
+        await interaction.reply({ content: `💰 ${interaction.user}, tu as actuellement **${or} PO**.` });
+        setTimeout(async () =>{
             try {
-                await interaction.editReply({ content: '⏳ **Commande expirée.**', components: [] });
-
-                setTimeout(async () => {
-                    try {
-                        await interaction.deleteReply();
-                    } catch (err) {
-                        console.error('Erreur lors de la suppression du message :', err);
-                    }
-                }, 5000);
-
+                await interaction.deleteReply();
             } catch (err) {
-                console.error('Erreur lors de la mise à jour du message :', err);
+                console.error('Erreur lors de la suppression du message :', err);
             }
-        }, 10000);
-
+        },10000);
+        logAction(interaction.user, `a consulté son or : ${or} PO`);
         return;
     }
 
@@ -162,24 +167,15 @@ client.on(Events.InteractionCreate, async interaction => {
             }
         }
         if (total === 0) message += "*Aucun objet pour le moment.*";
-        const reply = await interaction.reply({ content: message, ephemeral: true });
-        setTimeout(async () => {
+        await interaction.reply({ content: message });
+        setTimeout(async () =>{
             try {
-                await interaction.editReply({ content: '⏳ **Commande expirée.**', components: [] });
-
-                setTimeout(async () => {
-                    try {
-                        await interaction.deleteReply();
-                    } catch (err) {
-                        console.error('Erreur lors de la suppression du message :', err);
-                    }
-                }, 5000);
-
+                await interaction.deleteReply();
             } catch (err) {
-                console.error('Erreur lors de la mise à jour du message :', err);
+                console.error('Erreur lors de la suppression du message :', err);
             }
-        }, 10000);
-
+        },10000);
+        logAction(interaction.user, 'a consulté son inventaire');
         return;
     }
 
@@ -189,20 +185,21 @@ client.on(Events.InteractionCreate, async interaction => {
         const inventaire = vendeurs[vendeur];
         if (!inventaire) {
             const liste = Object.keys(vendeurs).join(', ');
-            await interaction.reply({ content: `Vendeur introuvable. Essaie : ${liste}`, ephemeral: true });
+            await interaction.reply({ content: `Vendeur introuvable. Essaie : ${liste}`, flags:64 });
             return;
         }
 
         const menu = createAchatMenu(vendeur);
         if (!menu) {
-            await interaction.reply({ content: `Désolé, ${vendeur} n'a plus d'objets en stock.`, ephemeral: true });
+            await interaction.reply({ content: `Désolé, ${vendeur} n'a plus d'objets en stock.` });
             return;
         }
         const row = new ActionRowBuilder().addComponents(menu);
-        await interaction.reply({ content: `🛒 **Bienvenue chez ${vendeur}** ! Sélectionne un objet à acheter :`, components: [row], ephemeral: true });
+        await interaction.reply({ content: `🛒 **Bienvenue chez ${vendeur}** ! Sélectionne un objet à acheter :`, components: [row], flags:64 });
+        logAction(interaction.user, `a ouvert le marché chez ${vendeur}`);
     }
 
-    // === Menu achat (mise à jour du même message) ===
+    // === Achats et quantités ===
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith('achat_menu_')) {
         const vendeur = interaction.customId.split('_')[2];
         const index = parseInt(interaction.values[0]);
@@ -213,7 +210,7 @@ client.on(Events.InteractionCreate, async interaction => {
         const menu = createQuantiteMenu(vendeur, index, maxQuantite);
         const row = new ActionRowBuilder().addComponents(menu);
 
-        await interaction.update({ content: `Combien de **${item.nom}** veux-tu acheter ?`, components: [row], ephemeral: true });
+        await interaction.update({ content: `Combien de **${item.nom}** veux-tu acheter ?`, components: [row],flags:64 });
     }
 
     if (interaction.isStringSelectMenu() && interaction.customId.startsWith('quantite_menu_')) {
@@ -240,7 +237,7 @@ client.on(Events.InteractionCreate, async interaction => {
             .setStyle(ButtonStyle.Danger);
 
         const row = new ActionRowBuilder().addComponents(bouton, retour, quitter);
-        await interaction.update({ content: `Confirme l'achat de **${quantite} x ${item.nom}** (${item.prix * quantite} PO) :`, components: [row], ephemeral: true });
+        await interaction.update({ content: `Confirme l'achat de **${quantite} x ${item.nom}** (${item.prix * quantite} PO) :`, components: [row] });
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('acheter_')) {
@@ -251,13 +248,13 @@ client.on(Events.InteractionCreate, async interaction => {
         const joueur = joueurs[userId];
 
         if (!item || item.stock < qty) {
-            await interaction.update({ content: `❌ Stock insuffisant pour **${item.nom}**.`, components: [], ephemeral: true });
+            await interaction.update({ content: `❌ Stock insuffisant pour **${item.nom}**.`, components: [] });
             return;
         }
 
         const totalPrix = item.prix * qty;
         if (joueur.or < totalPrix) {
-            await interaction.update({ content: `❌ Pas assez d'or. Il te faut ${totalPrix} PO.`, components: [], ephemeral: true });
+            await interaction.update({ content: `❌ Pas assez d'or. Il te faut ${totalPrix} PO.`, components: [] });
             return;
         }
 
@@ -269,18 +266,101 @@ client.on(Events.InteractionCreate, async interaction => {
         if (exist) exist.quantite += qty;
         else inv.push({ nom: item.nom, quantite: qty });
 
-        await interaction.update({ content: `✅ ${interaction.user} a acheté **${qty} x ${item.nom}** pour ${totalPrix} PO. Il te reste ${joueur.or} PO.`, components: [], ephemeral: true });
+        saveJoueurs();
+
+        await interaction.update({ content: `✅ ${interaction.user} a acheté **${qty} x ${item.nom}** pour ${totalPrix} PO. Il te reste ${joueur.or} PO.`, components: [] });
+        setTimeout(async () =>{
+            try {
+                await interaction.deleteReply();
+            } catch (err) {
+                console.error('Erreur lors de la suppression du message :', err);
+            }
+        },10000);
+        logAction(interaction.user, `a acheté ${qty} x ${item.nom} chez ${vendeur} pour ${totalPrix} PO`);
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('retour_')) {
         const vendeur = interaction.customId.split('_')[1];
         const menu = createAchatMenu(vendeur);
         const row = new ActionRowBuilder().addComponents(menu);
-        await interaction.update({ content: `🛒 **Retour chez ${vendeur}**. Sélectionne un autre objet à acheter :`, components: [row], ephemeral: true });
+        await interaction.update({ content: `🛒 **Retour chez ${vendeur}**. Sélectionne un autre objet à acheter :`, components: [row] });
     }
 
     if (interaction.isButton() && interaction.customId === 'quitter') {
-        await interaction.update({ content: `Merci pour ta visite, ${interaction.user} ! Reviens quand tu veux ! 🛒`, components: [], ephemeral: true });
+        await interaction.update({ content: `Merci pour ta visite, ${interaction.user} ! Reviens quand tu veux ! 🛒`, components: [] });
+        logAction(interaction.user, 'a quitté le menu d\'achat');
+    }
+    // === Admini commandes ===
+    if (interaction.isChatInputCommand() && interaction.commandName=="admin"){
+        const member = interaction.guild.members.cache.get(interaction.user.id);
+        if (!member.permissions.has('Administrator')) {
+            await interaction.reply({content:"❌ Tu n'as pas la permission d'utiliser cette commande.", flags: 64})
+            return;
+        }
+
+        const subcommand = interaction.options.getSubcommand();
+
+        if (subcommand === 'additem') {
+            const target = interaction.options.getUser('joueur');
+            const vendeur = interaction.options.getString('vendeur');
+            const objetNom = interaction.options.getString('objet');
+            const quantite = interaction.options.getInteger('quantité');
+            initJoueur(target);
+
+            // Vérification minimale du vendeur uniquement
+            if (!['marchand', 'forgeron', 'apothicaire'].includes(vendeur)) {
+                await interaction.reply({ content: `❌ Vendeur invalide. Choisis parmi : marchand, forgeron, apothicaire.`, ephemeral: true });
+                return;
+            }
+
+            const inventaire = joueurs[target.id].inventaire[vendeur];
+            const exist = inventaire.find(i => i.nom.toLowerCase() === objetNom.toLowerCase());
+
+            if (exist) {
+                exist.quantite += quantite;
+            } else {
+                inventaire.push({ nom: objetNom, quantite: quantite });
+            }
+
+            saveJoueurs();
+            logAction(interaction.user, `a ajouté ${quantite} x ${objetNom} (${vendeur}) à ${target.username}.`);
+            await interaction.reply({ content: `✅ ${quantite} x ${objetNom} ajouté à ${target.username} dans l'inventaire du ${vendeur}.`, ephemeral: true });
+        }
+        
+        if (subcommand === 'reset'){
+            const target = interaction.options.getUser('joueur');
+            initJoueur(target);
+            joueurs[target.id].or = 100;
+            joueurs[target.id].inventaire = { marchand: [], forgeron: [], apothicaire: [] };
+            saveJoueurs();
+            logAction(interaction.user, `a réinitialisé le profil de ${target.username}.`);
+            await interaction.reply({ content: `✅ Profil de ${target.username} réinitialisé.`,flags: 64});
+        }
+
+        if (subcommand === 'setgold') {
+            const target = interaction.options.getUser('joueur');
+            const action = interaction.options.getString('action');
+            const montant = interaction.options.getInteger('montant');
+            initJoueur(target);
+
+            const joueur = joueurs[target.id];
+            if (action === 'set') {
+                joueur.or = montant;
+                await interaction.reply({ content: `✅ Or de ${target.username} défini à ${montant} PO.`, flags: 64 });
+                logAction(interaction.user, `a défini l'or de ${target.username} à ${montant} PO.`);
+            } else if (action === 'add') {
+                joueur.or += montant;
+                await interaction.reply({ content: `✅ ${montant} PO ajoutés à ${target.username}. Nouveau total : ${joueur.or} PO.`, flags: 64 });
+                logAction(interaction.user, `a ajouté ${montant} PO à ${target.username}. Nouveau total : ${joueur.or} PO.`);
+            } else if (action === 'remove') {
+                joueur.or = Math.max(0, joueur.or - montant);
+                await interaction.reply({ content: `✅ ${montant} PO retirés de ${target.username}. Total : ${joueur.or} PO.`, flags: 64 });
+                logAction(interaction.user, `a retiré ${montant} PO de ${target.username}. Nouveau total : ${joueur.or} PO.`);
+            } else {
+                await interaction.reply({ content: `❌ Action inconnue.`, flags: 64 });
+            }
+            saveJoueurs();
+        }
     }
 });
 
