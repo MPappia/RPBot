@@ -12,6 +12,23 @@ const commands = [
     new SlashCommandBuilder()
         .setName('or')
         .setDescription("Voir combien d'or tu as"),
+    
+    new SlashCommandBuilder()
+        .setName('table')
+        .setDescription("Fais appel à une table aléatoire")
+        .addSubcommand(sub =>
+            sub.setName('meteo')
+                .setDescription('Détermine une météo aléatoirement')
+        )
+        .addSubcommand(sub =>
+            sub.setName('rencontre')
+                .setDescription('Détermine une rencontre aléatoirement')
+        )
+        .addSubcommand(sub =>
+            sub.setName('decouverte')
+                .setDescription('Détermine une découverte aléatoirement')
+        ),
+    
     new SlashCommandBuilder()
         .setName('inventaire')
         .setDescription("Voir ton inventaire"),

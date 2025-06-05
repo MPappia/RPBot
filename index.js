@@ -1,6 +1,6 @@
 const { Client, GatewayIntentBits, Partials, Events, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 require('dotenv').config();
-const { vendeurs, joueurs, saveJoueurs } = require('./objet.js');
+const { vendeurs, joueurs, saveJoueurs, tables } = require('./objet.js');
 
 const fs = require('fs');
 const path = require('path');
@@ -47,6 +47,17 @@ function initJoueur(user) {
             inventaire: { marchand: [], forgeron: [], apothicaire: [] }
         };
     }
+}
+
+
+// === Tables aléatoires ===
+
+function rollOnTable(dMax, table) {
+    const roll = Math.floor(Math.random()* dMax) +1;
+    const entry = table.find(row => roll >= row.interval[0] && roll <= row.interval[1]);
+    return entry
+        ? `🎲 Jet : ${roll} → ${entry.description}`
+        : `🎲 Jet : ${roll} → Aucun résultat trouvé.`;
 }
 
 // === Créer menu d'achat ===
@@ -161,6 +172,40 @@ client.on(Events.InteractionCreate, async interaction => {
         logAction(interaction.user, `a consulté son or : ${or} PO`);
         return;
     }
+
+    // === /table ===
+
+    if(interaction.isChatInputCommand() && interaction.commandName === 'table'){
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        if (!member.roles.cache.some(role=>role.name === 'Maitre des dés')) {
+            return interaction.reply({
+                content:"❌ Seul·e le Maître du Jeu (MJ) peut utiliser cette commande.",
+                flags:64
+            });
+        }
+        
+        
+        const sub = interaction.options.getSubcommand();
+
+
+        if(sub === 'meteo'){
+            const result = rollOnTable(20, tables.meteo);
+            await interaction.reply({content: result, flags:64});
+            logAction(interaction.user, 'a tiré la table météo');
+        }
+        else if (sub === 'rencontre'){
+            const result = rollOnTable(100, tables.rencontre);
+            await interaction.reply({content: result, flags:64});
+            logAction(interaction.user, ' a tiré la table rencontre')
+        }
+        else if (sub === 'decouverte'){
+            const result = rollOnTable(100, tables.decouverte);
+            await interaction.reply({ content: result, flags:64 });
+            logAction(interaction.user, 'a tiré la table découverte');
+        }
+        return;
+    }
+
 
     // === /inventaire ===
     if (interaction.isChatInputCommand() && interaction.commandName === 'inventaire') {
@@ -301,8 +346,9 @@ client.on(Events.InteractionCreate, async interaction => {
     }
     // === Admini commandes ===
     if (interaction.isChatInputCommand() && interaction.commandName=="admin"){
-        const member = interaction.guild.members.cache.get(interaction.user.id);
-        if (!member.permissions.has('Administrator')) {
+        const member = interaction.guild.members.fetch(interaction.user.id);
+        
+        if (!(await member).roles.cache.some(role=>role.name === 'Maitre des dés')) {
             await interaction.reply({content:"❌ Tu n'as pas la permission d'utiliser cette commande.", flags: 64})
             return;
         }

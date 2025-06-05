@@ -59,4 +59,73 @@ const vendeurs = {
     ]
 };
 
-module.exports = { joueurs, vendeurs, saveJoueurs };
+const tables = {
+    meteo :[
+        { interval: [1,20], description: 'Pluie fine'},
+        { interval: [21,40], description: 'Ciel couvert'},
+        { interval: [41,60], description: 'Ciel dégagé'},
+        { interval: [61,80], description: 'Vent fort'},
+        { interval: [81,95], description: 'Orage'},
+        { interval: [96,100], description: 'Tempête'}
+    ],
+    rencontre :[
+        { interval: [1, 10], description: "Loup en meute (1d6 + 2 loups)" },
+        { interval: [11, 20], description: "Groupe de gobelins (1d4 gobelins)" },
+        { interval: [21, 40], description: "Voyageur errant (paysan, sans arme)" },
+        { interval: [41, 60], description: "Groupe de bandits (1d4 + 2 bandits)" },
+        { interval: [61, 80], description: "Marchand ambulant" },
+        { interval: [81, 95], description: "Druide en méditation" },
+        { interval: [96, 100], description: "Rencontre amicale (donne des conseils)" }
+    ],
+    decouverte: [
+        { interval: [1, 4],    description: "Trace de passage d’animal (terre retournée, branche cassée)" },
+        { interval: [5, 10],   description: "Terrier/aire d’un animal (indiquer: jeter 1d100 dans table créatures sauvages)" },
+        { interval: [11, 15],  description: "Cadavre d’animal récent (1d10 jours) → jeter 1d100 sur table créatures sauvages" },
+        { interval: [16, 20],  description: "Crottes d’animal (jeter 1d100 sur table créatures sauvages)" },
+        { interval: [21, 23],  description: "Trace humaine (empreintes, sentier, branchages brisés)" },
+        { interval: [24, 24],  description: "Cadavre d’humanoïde (récent, 1d10 jours)" },
+        { interval: [25, 26],  description: "Tombe d’humanoïde (pierres, tumulus, vestiges de bûcher)" },
+        { interval: [27, 28],  description: "Déchets humains (petits : restes, poterie cassée)" },
+        { interval: [29, 30],  description: "Déchets humains (grosses caisses, tonneaux abandonnés)" },
+        { interval: [31, 31],  description: "Ruine en pierre abandonnée (récente)" },
+        { interval: [32, 32],  description: "Ruine en pierre abandonnée (ancienne, murs éventrés)" },
+        { interval: [33, 33],  description: "Ruines d’habitation en bois (souches, sol écroulé)" },
+        { interval: [34, 34],  description: "Ruine brûlée (charbons, poutres calcinées)" },
+        { interval: [35, 37],  description: "Vestiges d’un feu de camp (cendres, braises éteintes)" },
+        { interval: [38, 38],  description: "Objet perdu (babiole aléatoire ; valeur 1d10 po)" },
+        { interval: [39, 39],  description: "Habitation inoccupée (en bon état, portes ouvertes)" },
+        { interval: [40, 40],  description: "Habitation occupée (fermier isolé ou caravane)" },
+        { interval: [41, 42],  description: "Ruisseau, eau sale" },
+        { interval: [43, 45],  description: "Ruisseau, eau potable" },
+        { interval: [46, 47],  description: "Source d’eau (contaminée)" },
+        { interval: [48, 49],  description: "Source d’eau (saine mais stagnante)" },
+        { interval: [50, 52],  description: "Source d’eau (pure, fraîche)" },
+        { interval: [53, 55],  description: "Marre, eau contaminée" },
+        { interval: [56, 58],  description: "Marre, eau sale" },
+        { interval: [59, 60],  description: "Marre, eau potable" },
+        { interval: [61, 62],  description: "Colline rocheuse isolée" },
+        { interval: [63, 65],  description: "Pierre remarquable (menhir, rocher gravé)" },
+        { interval: [66, 66],  description: "Entrée d’une petite grotte" },
+        { interval: [67, 67],  description: "Entrée d’une grande caverne" },
+        { interval: [68, 68],  description: "Filon affleurant (minerai, métal, charbon)" },
+        { interval: [69, 69],  description: "Entrée d’une mine abandonnée" },
+        { interval: [70, 70],  description: "Élémentaire de terre mineur (1d4 élémentaires)" },
+        { interval: [71, 71],  description: "Statue érodée (soldat, femme, animal sculpté)" },
+        { interval: [72, 72],  description: "Gargouille ou vestige architectural étrange" },
+        { interval: [73, 73],  description: "Terre sacrée (cercles de pierres ou autel ancien)" },
+        { interval: [74, 74],  description: "Terre profanée (cercle rituel, runes noires)" },
+        { interval: [75, 75],  description: "Gouffre profond (profondeur 1d6×3 m)" },
+        { interval: [76, 77],  description: "Marécage épais" },
+        { interval: [78, 79],  description: "Zone boueuse" },
+        { interval: [80, 80],  description: "Tourbière dangereuse" },
+        { interval: [81, 81],  description: "Arbuste animé (plante magique)" },
+        { interval: [82, 82],  description: "Arbre animé (arbre magique)" },
+        { interval: [83, 84],  description: "Zone dénudée (pas de végétation sur 1d10×100 m)" },
+        { interval: [85, 88],  description: "Arbre remarquable (souche géante, arbre foudroyé)" },
+        { interval: [89, 92],  description: "Tas de bois coupé (2d8 branches) → jeter 1d20 sur table récolte de bois" },
+        { interval: [93, 96],  description: "Nourriture abandonnée (2d12 rations) → jeter 1d20 sur table nourriture" },
+        { interval: [97, 100], description: "Petite forêt isolée ou clairière" }
+    ]
+}
+
+module.exports = { joueurs, vendeurs, saveJoueurs, tables };
