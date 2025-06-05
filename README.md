@@ -1,5 +1,8 @@
 
-![rpbot](https://github.com/user-attachments/assets/7e2cc928-d0e7-43bd-bf3f-8615c679b90a)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/7e2cc928-d0e7-43bd-bf3f-8615c679b90a" alt="rpbot" />
+</p>
+
 
 # RPBot – Le bot qui accompagne vos soirées JDR
 
