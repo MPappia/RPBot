@@ -81,3 +81,6 @@ RPBot est un bot Discord dédié aux parties de jeu de rôle :
 Ce projet est distribué sous licence **Apache License 2.0**.  
 Voir le fichier [LICENSE](LICENSE) pour plus de détails ou consultez :  
 [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0)
+
+## Dernière modification 
+05/06/2025
