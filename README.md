@@ -11,18 +11,7 @@
 
 1. [Description](#description)  
 2. [Fonctionnalités](#fonctionnalités)  
-3. [Prérequis](#prérequis)  
-4. [Installation](#installation)  
-5. [Configuration](#configuration)  
-6. [Structure du projet](#structure-du-projet)  
-7. [Utilisation](#utilisation)  
-   - [1. Commandes Slash](#1-commandes-slash)  
-   - [2. Réactions](#2-réactions)  
-   - [3. Tables aléatoires](#3-tables-aléatoires)  
-   - [4. Administration](#4-administration)  
-   - [5. Gestion des profils et sauvegardes](#5-gestion-des-profils-et-sauvegardes)  
-8. [Contribution](#contribution)  
-9. [Licence](#licence)
+3. [Licence](#licence)  
 
 ---
 
@@ -35,9 +24,9 @@ RPBot est un bot Discord dédié aux parties de jeu de rôle :
 - Propose des **tables aléatoires** (météo, rencontres, découvertes) avec `/table`.  
 - Offre un menu d’**achat/vendeur** interactif (`/market`) pour plusieurs catégories (marchand, forgeron, apothicaire).  
 - Inclut un **espace administrateur** (`/admin`) pour gérer l’or et les objets des joueurs.  
-- Envoie des **messages privés** selon des réactions (👍, 💩).  
+- Envoie des **messages privés** selon des réactions.  
 - Archive toutes les actions importantes dans un fichier `logs.txt`.  
-- Sauvegarde automatiquement les profils joueurs (`joueurs.json`).
+- Sauvegarde automatiquement les profils joueurs (`joueurs.json`).  
 
 ---
 
@@ -61,18 +50,19 @@ RPBot est un bot Discord dédié aux parties de jeu de rôle :
   - `/table meteo` (1d20) – météo aléatoire.  
   - `/table rencontre` (1d100) – rencontre aléatoire.  
   - `/table decouverte` (1d100) – découverte aléatoire.  
-  - Seuls les utilisateurs ayant le rôle **“MJ”** peuvent exécuter `/table`.  
+  - Seuls les utilisateurs ayant le rôle **“Maitre des dés”** peuvent exécuter `/table`.  
 
-- **Administration (`/admin`)** :  
+- **Administration (`/admin`) :**  
   - `setgold [joueur] [action:set|add|remove] [montant]`  
   - `additem [joueur] [vendeur] [objet] [quantité]`  
-  - `reset [joueur]` (remet or à 100 et vide l’inventaire)  
+  - `reset [joueur]` (remet or à 100 PO et vide l’inventaire)  
   - Accessible uniquement aux membres avec le rôle **Maitre des dés**.  
 
 - **Réactions spéciales :**  
   - Réaction 👍 → envoie un MP personnalisé :  
     > “Salut ! Merci d’avoir réagi avec 👍. Voici ton message privé de bot ! 🎉”  
-  - Réaction 💩 → envoie un MP “Poop”  
+  - Réaction 💩 → envoie un MP “Perdu...”
+  - Fonctionnalité totalement personnalisable. 
 
 - **Logs & Sauvegarde :**  
   - Chaque action (lancer de dés, achat, admin, réaction) est journalisée dans `logs.txt`.  
@@ -82,3 +72,9 @@ RPBot est un bot Discord dédié aux parties de jeu de rôle :
   - Les réponses éphémères (`/or`, `/inventaire`, achats) se suppriment après 10 s pour garder le chat propre.  
 
 ---
+
+## Licence
+
+Ce projet est distribué sous licence **Apache License 2.0**.  
+Voir le fichier [LICENSE](LICENSE) pour plus de détails ou consultez :  
+[https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0)
