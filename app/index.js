@@ -36,6 +36,9 @@ client.once(Events.ClientReady, async () => {
 });
 
 
+// =======================================================================================================
+// === Déclaration des fonctions ===
+
 // === Initialiser joueur ===
 function initJoueur(user) {
     const id = user.id;
@@ -92,6 +95,28 @@ function createQuantiteMenu(vendeur, itemIndex, max) {
     return menu;
 }
 
+//=== Configuration des réactions ===
+const filePath = path.join(__dirname,'reactions.json');
+function loadReaction(){
+    if(!fs.existsSync(filePath)){
+        fs.writeFileSync(filePath, JSON.stringify({reactions:[]}, null, 2));
+    }
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw).reactions;
+}
+
+function saveReactions(list){
+    fs.writeFileSync(
+        filePath,
+        JSON.stringify({reactions:list}, null, 2),
+        'utf-8'
+    );
+}
+
+
+let reactionConfig = loadReaction();
+// =======================================================================================================
+// === Fonctionnalités de l'application ===
 
 // === Réactions classiques ===
 const TARGET_EMOJI = '👍';
@@ -104,16 +129,19 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     if (reaction.partial) await reaction.fetch();
     if (reaction.message.partial) await reaction.message.fetch();
 
-    if (reaction.emoji.name === TARGET_EMOJI) {
-        const dmChannel = await user.createDM();
-        await dmChannel.send(DM_MESSAGE);
-        logAction(user, 'a cliqué sur 👍');
-    }
+    const reacted = reaction.emoji.id
+        ? `<:${reaction.emoji.name}:${reaction.emoji.id}>`
+        : reaction.emoji.name;
 
-    if (reaction.emoji.name === TARGET_EMOJI_PUNPUN) {
-        const dmChannel = await user.createDM();
-        await dmChannel.send(DM_MESSAGE_PUNPUN);
-        logAction(user, 'a cliqué sur 💩');
+    const entry = reactionConfig.find(r=>r.emoji === reacted);
+    if (!entry) return;
+
+    try {
+        const dm = await user.createDM();
+        await dm.send(entry.response);
+        logAction(user, `a cliqué sur ${reacted} -> réponse envoyée.`);
+    } catch (err) {
+        console.error("Impossible d'envoyer le MP :", err);
     }
 });
 
@@ -383,6 +411,91 @@ client.on(Events.InteractionCreate, async interaction => {
         await interaction.update({ content: `Merci pour ta visite, ${interaction.user} ! Reviens quand tu veux ! 🛒`, components: [] });
         logAction(interaction.user, 'a quitté le menu d\'achat');
     }
+
+    //=== Gestion des réactions ===
+    if (interaction.isChatInputCommand() && interaction.commandName=='reaction_config'){
+        const member = interaction.guild.members.fetch(interaction.user.id);
+        
+        if (!(await member).roles.cache.some(role=>role.name === 'Maitre des dés')) {
+            await interaction.reply({content:"❌ Tu n'as pas la permission d'utiliser cette commande.", flags: 64})
+            return;
+        }
+
+        const sub = interaction.options.getSubcommand();
+        const emoji = interaction.options.getString('emoji');
+        if (sub === 'add'){
+            const message = interaction.options.getString('message');
+
+            const exists = reactionConfig.find(r => r.emoji === emoji);
+            if (exists){
+                await interaction.reply({
+                    content: `❌ L'emoji ${emoji} est déjà configuré.`,
+                    flags: 64
+                });
+                return;
+            }
+            reactionConfig.push({ emoji, response: message });
+            saveReactions(reactionConfig);
+            await interaction.reply({
+                content: `✅ Association créée : si on clique sur **${emoji}**, j'envoie “${message}”.`,
+                flags: 64
+            });
+            return;
+        }
+        if (sub === 'remove'){
+            const index = reactionConfig.findIndex(r=> r.emoji === emoji);
+            if (index=== -1){
+                await interaction.reply({
+                    content: `❌ Aucune configuration trouvée pour ${emoji}.`,
+                    flags: 64   
+                });
+                return;
+            }
+            reactionConfig.splice(index,1);
+            saveReactions(reactionConfig);
+            await interaction.reply({
+                content: `✅ Configuration pour ${emoji} supprimée.`,
+                flags: 64
+            });
+            return;
+        }
+        if(sub==='list'){
+            if (reactionConfig.length === 0){
+                return interaction.reply({
+                    content: 'ℹ️ Aucune réaction personnalisée n’est configurée pour le moment.',
+                    flags: 64,
+                });
+            }
+            const lines = reactionConfig.map((r,i) =>`${i + 1}. **${r.emoji}** → ${r.response}`);
+            const payload = '📋 **Réactions configurées :**\n' + lines.join('\n');
+
+            return interaction.reply({
+                content: payload,
+                flags:64
+            });
+        }
+        if (sub=== 'change'){
+            const emoji = interaction.options.getString('emoji');
+            const nouveauMessage = interaction.options.getString('message');
+
+            const entry = reactionConfig.find(r => r.emoji === emoji);
+            if (!entry){
+                return interaction.reply({
+                    content: `❌ Impossible de modifier : aucune configuration pour **${emoji}**.`,
+                    flags: 64
+                });
+            }
+            entry.response = nouveauMessage;
+            saveReactions(reactionConfig);
+
+            return interaction.reply({
+                content: `✅ La réponse liée à **${emoji}** a bien été mise à jour.`,
+                flags: 64
+            });
+        }
+    }
+
+
     // === Admini commandes ===
     if (interaction.isChatInputCommand() && interaction.commandName=="admin"){
         const member = interaction.guild.members.fetch(interaction.user.id);
@@ -454,6 +567,108 @@ client.on(Events.InteractionCreate, async interaction => {
                 await interaction.reply({ content: `❌ Action inconnue.`, flags: 64 });
             }
             saveJoueurs();
+        }
+    }
+    //=== /help === 
+    if(interaction.isChatInputCommand() && interaction.commandName === 'help'){
+        const helpMessage = [
+            '**📖 RPBot – Liste des commandes :**',
+            '',
+            '**/help** – Affiche cette liste de commandes.',
+            '**/market** <vendeur> – Ouvre le magasin (marchand, forgeron, apothicaire).',
+            '**/or** – Affiche ton total de pièces d’or.',
+            '**/inventaire** – Affiche ton inventaire.',
+            '**/roll** [dés] – Lancer un ou plusieurs dés (ex. `3d6+2`).',
+            '**/table** meteo|rencontre|decouverte – Tire aléatoirement sur une table (MJ only).',
+            '**/enigme** – Affiche une énigme aléatoire, avec bouton “Révéler la réponse” (MJ only).',
+            '**/reaction_config** add|remove|list|change – Gérer les réactions émojis → MP (MJ only).',
+            '**/admin** setgold|additem|reset – Administration des or et inventaires (MJ only).',
+            '',
+            '',
+            '** Mise en place du rôle Maitre des dés est nécessaire pour les fonctions MJ (déploiement de la commande en cours) **'
+        ].join('\n');
+        return interaction.reply({content: helpMessage, flags: 64});
+    }
+
+    //=== Appliquer le rôle Maitre des dés / le retirer ===
+    if(interaction.isChatInputCommand() && interaction.commandName === 'mj'){
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        if (!member.permissions.has('ManagesRoles')) {
+            return interaction.reply({
+                content: '❌ Tu n’as pas la permission **Manage Roles** pour gérer le rôle MJ.',
+                flags: 64
+            });
+        }
+        const botMember = await interaction.guild.members.fetch(interaction.client.user.id);
+        if (!botMember.permissions.has('ManagesRoles')){
+            return interaction.reply({
+                content: '❌ Je n’ai pas la permission **Manage Roles** sur ce serveur, je ne peux pas créer ni assigner le rôle MJ.',
+                flags: 64
+            });
+        }
+
+        const sub = interaction.options.getSubcommand();
+        const targetUser = interaction.options.getUser('joueur', true);
+        const targetMember = await interaction.guild.members.fetch(targetUser.id);
+
+        let mjRole = interaction.guild.roles.cache.find(r=>r.name === 'Maitre des dés');
+        if (!mjRole){
+            try{
+                mjRole = await interaction.guild.roles.create({
+                    name: 'Maitre des dés',
+                    color: '#8B0000',
+                    reason:`Rôle MJ créé automatiquement par la commande /mj ${sub} par ${interaction.user.tag}`
+                });
+            } catch (err) {
+                console.error('Erreur lors de la création du rôle MJ :', err);
+                return interaction.reply({
+                    content: '❌ Impossible de créer le rôle “Maitre des dés”. Vérifie mes permissions.',
+                    flags: 64
+                })
+            }
+        }
+        if (sub === 'assign'){
+            if (targetMember.roles.cache.has(mjRole.id)) {
+                return interaction.reply({
+                    content: `❌ ${targetUser.tag} a déjà le rôle “Maitre des dés”.`,
+                    flags: 64
+                });
+            }
+            try{
+                await targetMember.roles.add(mjRole, `Attribué via /mj assign par ${interaction.user.tag}`);
+                logAction(interaction.user, `a assigné le rôle MJ à ${targetUser.tag}`);
+                return interaction.reply({
+                    content: `✅ ${targetUser.tag} est maintenant **Maitre des dés**.`,
+                    flags: 64
+                })
+            } catch (err) {
+                console.error("Erreur lors de l'ajout du rôle MJ :", err);
+                return interaction.reply({
+                    content: '❌ Impossible d’attribuer le rôle MJ. Vérifie les hiérarchies de rôles.',
+                    flags: 64
+                });
+            }
+        } else if (sub === 'remove') {
+            if (!targetMember.roles.cache.has(mjRole.id)) {
+                return interaction.reply({
+                    content : `❌ ${targetUser.tag} n’a pas le rôle “Maitre des dés”.`,
+                    flags : 64
+                });
+            }
+            try {
+                await targetMember.roles.remove(mjRole, `Retiré via /mj remove par ${interaction.user.tag}`);
+                logAction(interaction.user, `a retiré le rôle MJ à ${targetUser.tag}`);
+                return interaction.reply({
+                    content:`✅ Le rôle **Maitre des dés** a été retiré à ${targetUser.tag}.`,
+                    flags:64
+                });
+            } catch (err){
+                console.error('Erreur lors de la suppression du rôle MJ :', err)
+                return interaction.reply({
+                    content: '❌ Impossible de retirer le rôle MJ. Vérifie les hiérarchies de rôles.',
+                    flags : 64
+                });
+            }
         }
     }
 });

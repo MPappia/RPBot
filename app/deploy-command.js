@@ -14,6 +14,51 @@ const commands = [
         .setDescription("Voir combien d'or tu as"),
     
     new SlashCommandBuilder()
+        .setName('reaction_config')
+        .setDescription('Gérer les réactions personnalisées du bot')
+        .addSubcommand(sub=>
+            sub.setName('add')
+                .setDescription('Associer un emoji à un message')
+                .addStringOption(opt=>
+                    opt.setName('emoji')
+                        .setDescription("Emoji Unicode ou :nom: de l'émoji custom")
+                        .setRequired(true)
+                )
+                .addStringOption(opt=>
+                    opt.setName('message')
+                        .setDescription("Texte à envoyer en MP lorsque l'émoji est cliqué")
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(sub=>
+            sub.setName('remove')
+                .setDescription("Supprimer une association d'émoji")
+                .addStringOption(opt=>
+                    opt.setName('emoji')
+                        .setDescription("Emoji à dissocier")
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(sub=>
+            sub.setName('list')
+                .setDescription("Affiche la liste des réactions disponnibles")
+        )
+        .addSubcommand(sub=>
+            sub.setName('change')
+                .setDescription('Modifie une réaction de la liste')
+                .addStringOption(opt=>
+                    opt.setName("emoji")
+                        .setDescription('Emoji dont on souhaite changer le message')
+                        .setRequired(true)
+                )
+                .addStringOption(opt=>
+                    opt.setName('message')
+                        .setDescription('Nouveau texte à envoyer en MP')
+                        .setRequired(true)
+                )
+            ),
+
+    new SlashCommandBuilder()
         .setName('enigme')
         .setDescription('Affiche une énigme aléatoire'),
 
@@ -82,7 +127,15 @@ const commands = [
                 sub.setName('reset')
                     .setDescription("Réinitialiser un joueur")
                     .addUserOption(opt => opt.setName('joueur').setDescription('Choisir un joueur').setRequired(true))
-            )
+            ),
+    new SlashCommandBuilder()
+        .setName('help')
+        .setDescription("Affiche la liste de toutes les commandes du bot"),
+    
+    new SlashCommandBuilder().setName('mj').setDescription('Créer un rôle Maitre des dés pour les fonctionnalités plus pousées')
+            .addSubcommand(sub => sub.setName('assign').setDescription('Attribue le rôle à un membre')
+                .addUserOption(opt=>opt.setName('joueur').setDescription('Le membre deviendra MJ').setRequired(true)))
+            .addSubcommand(sub=>sub.setName('remove').setDescription('Retire le rôle Maitre des dés à un membre').addUserOption(opt=>opt.setName('joueur').setDescription('Le membre à qui on retire le rôle MJ').setRequired(true)))
 ]
     .map(command => command.toJSON());
 
